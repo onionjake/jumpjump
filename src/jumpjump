@@ -21,10 +21,9 @@ end
 class Player
   include Sprites::Sprite
 
-  def initialize
+  def initialize color
     super()
 
-    color = [ 0xc0, 0x80, 0x40]
     @image = Surface.new [30,30]
     @image.draw_box_s [0,0], [30,30], color
     @rect = @image.make_rect
@@ -92,13 +91,15 @@ end
 @clock.target_framerate = 120
 @clock.enable_tick_events
 
-@sprites=Sprites::Group.new
+@players=Sprites::Group.new
 @walls=Sprites::Group.new
-Sprites::UpdateGroup.extend_object @sprites
+Sprites::UpdateGroup.extend_object @players
 Sprites::UpdateGroup.extend_object @walls
 
-@player = Player.new
-@sprites << @player
+@player1 = Player.new [ 0xc0, 0x80, 0x40]
+@player2 = Player.new [ 0xc0, 0xc0, 0xa0]
+@players << @player1
+@players << @player2
 
 @walls << Wall.new([400,400])
 @walls << Wall.new([300,300])
@@ -119,19 +120,33 @@ while should_run
     when Events::QuitRequested
       should_run = false
     when Events::KeyPressed 
-      @player.vel_add [-1,0] if event.key == :left
-      @player.vel_add [ 1,0] if event.key == :right
-      @player.vel_add [0,-4] if event.key == :up
+      case event.key
+      when :left
+        @player1.vel_add [-1,0] 
+      when :right
+        @player1.vel_add [ 1,0] 
+      when :up
+        @player1.vel_add [0,-4]
+      when :a
+        @player2.vel_add [-1,0] 
+      when :d
+        @player2.vel_add [ 1,0] 
+      when :w
+        @player2.vel_add [0,-4] 
+      end
     when Events::KeyReleased 
-      @player.vel_add [ 1,0] if event.key == :left
-      @player.vel_add [-1,0] if event.key == :right
-      @player.vel_add [0,4] if event.key == :up
+      @player1.vel_add [ 1,0] if event.key == :left
+      @player1.vel_add [-1,0] if event.key == :right
+      @player1.vel_add [0,4] if event.key == :up
+      @player2.vel_add [ 1,0] if event.key == :a
+      @player2.vel_add [-1,0] if event.key == :d
+      @player2.vel_add [0,4] if event.key == :w
     end
   end
 
-  @sprites.undraw @screen, @background
-  @sprites.update seconds_passed, @walls
-  @sprites.draw @screen
+  @players.undraw @screen, @background
+  @players.update seconds_passed, @walls
+  @players.draw @screen
   @screen.flip
 end
 
