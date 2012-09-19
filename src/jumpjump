@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 require 'rubygems'
 require 'rubygame'
 require 'matrix'
@@ -11,6 +11,10 @@ resolution = [640, 480]
 @screen = Screen.open resolution, 0, [HWSURFACE, DOUBLEBUF]
 @screen.title = "JumpJump"
 #@screen.show_cursor = false
+TTF.setup
+point_size = 20
+$font = TTF.new "/Library/Fonts/Verdana.ttf", point_size
+YELLOW = [ 0xee, 0xee, 0x33]
 
 unless @screen.respond_to? :draw_box
   puts "Don't have SDL_gfx available, can't use draw_box"
@@ -33,15 +37,6 @@ class Player
   def vel_add vel
     @velocity[0] += vel[0]
     @velocity[1] += vel[1]
-  end
-
-  def vel_inv
-    print "Was: "
-    pp @velocity
-    @velocity[0] = -1 * @velocity[0]
-    @velocity[1] = -1 * @velocity[1]
-    print "Now: "
-    pp @velocity
   end
 
   def update seconds_passed, walls
@@ -84,8 +79,11 @@ class Wall
   end
 end
 
+@black = Surface.new resolution
+@black.blit @screen,[0,0]
 @background = Surface.new resolution
 @background.blit @screen,[0,0]
+@score = Surface.new [640,30]
 
 @clock = Clock.new
 @clock.target_framerate = 120
@@ -109,13 +107,22 @@ Sprites::UpdateGroup.extend_object @walls
 
 @event_queue = EventQueue.new
 @event_queue.enable_new_style_events #enables rubygame 3.0
+@player1_is_it_text = $font.render_utf8 "Player 1 is it!", true, YELLOW
+@player2_is_it_text = $font.render_utf8 "Player 2 is it!", true, YELLOW
+
+@player1_wins_text = $font.render_utf8 "Player 1 wins!", true, YELLOW
+@player2_wins_text = $font.render_utf8 "Player 2 wins!", true, YELLOW
+
+@player1_score = 2000
+@player2_score = 2000
 
 should_run = true
+@player1_is_it = true
+@colliding = false
 while should_run
   seconds_passed = @clock.tick().seconds
 
   @event_queue.each do |event|
-    puts event
     case event
     when Events::QuitRequested
       should_run = false
@@ -141,6 +148,47 @@ while should_run
       @player2.vel_add [ 1,0] if event.key == :a
       @player2.vel_add [-1,0] if event.key == :d
       @player2.vel_add [0,4] if event.key == :w
+    end
+  end
+  tmp = @player1.collide(@player2) != [] 
+  if tmp and !@colliding
+    @player1_is_it = !@player1_is_it
+    @colliding = true
+    @black.blit @background, [0,0]
+    @walls.draw @background
+    if @player1_is_it
+      @player1_is_it_text.blit @background, [10,40]
+    else
+      @player2_is_it_text.blit @background, [320,40]
+    end
+    @background.blit @screen, [0,0]
+  elsif !tmp and @colliding
+    @colliding = false
+  end
+  if @player1_score or @player2_score == 0
+    if @player1_score  == 0
+       @player2_wins_text.blit @background, [220,250]
+    elsif @player2_score  == 0
+      @player1_wins_text.blit @background, [220,250]
+    end
+    @background.blit @screen, [0,0]
+  end
+
+  @black.blit @score, [0,0]
+  player1_score_text = $font.render_utf8 @player1_score.to_s, true, YELLOW
+  player2_score_text = $font.render_utf8 @player2_score.to_s, true, YELLOW
+  player1_score_text.blit @score, [0,0]
+  player2_score_text.blit @score, [320,0]
+  @score.blit @screen, [0,0]
+
+
+  if @player1_is_it
+    if @player1_score > 0
+    @player1_score -= 1
+    end
+  else
+    if @player2_score > 0
+    @player2_score -= 1
     end
   end
 
