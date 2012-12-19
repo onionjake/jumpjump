@@ -1,12 +1,16 @@
 #!/usr/bin/env ruby
 require 'rubygems'
 require 'rubygame'
+require 'pubnub'
 require 'matrix'
 require 'pp'
 
 include Rubygame
 
 resolution = [640, 480]
+
+pn = Pubnub.new(:publish_key => 'pub-dad6a0ed-bc25-4a22-be4d-d4695a6a2b4a', :subscribe_key => 'sub-a391c3ba-08f1-11e2-98f5-8d7cd55b77a3')
+
 
 @screen = Screen.open resolution, 0, [HWSURFACE, DOUBLEBUF]
 @screen.title = "JumpJump"
@@ -132,6 +136,12 @@ Sprites::UpdateGroup.extend_object @walls
 
 @player1_score = 2000
 @player2_score = 2000
+
+@got_message = lambda { |message|
+  puts message
+  return false
+}
+pn.subscribe(:channel => :jumpjump, :callback => @got_message)
 
 should_run = true
 @player1_is_it = true
